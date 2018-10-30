@@ -1,5 +1,6 @@
 require 'tweetstream'
-require 'kafka'
+require 'ruby-kafka'
+require 'pp'
 
 TweetStream.configure do |config|
   config.consumer_key       =  ENV['consumer_key']
@@ -9,38 +10,29 @@ TweetStream.configure do |config|
   config.auth_method        = :oauth
 end
 
-TweetStream::Client.new.sample do |status|
-  puts "#{status.text}"
+
+logger = Logger.new($stderr)
+brokers = ["localhost:9092"]
+
+# Make sure to create this topic in your Kafka cluster or configure the
+# cluster to auto-create topics.
+topic = "twitter"
+
+kafka = Kafka.new(brokers, client_id: "twitter-producer", logger: logger)
+
+producer = kafka.producer
+
+begin
+
+    TweetStream::Client.new.track('italy', 'italian') do |status|
+      p "#{status.text}"
+      print "\n\n\n"
+      producer.produce(status.text, topic: topic)
+      producer.deliver_messages
+    end
+    # Send messages for every 10 lines.
+    # producer.deliver_messages if index % 10 == 0 
+ensure
+  producer.deliver_messages
+  producer.shutdown
 end
-
-
-
-
-# logger = Logger.new($stderr)
-# brokers = ENV.fetch("KAFKA_BROKERS")
-
-# # Make sure to create this topic in your Kafka cluster or configure the
-# # cluster to auto-create topics.
-# topic = "text"
-
-# kafka = Kafka.new(
-#   seed_brokers: brokers,
-#   client_id: "simple-producer",
-#   logger: logger,
-# )
-
-# producer = kafka.producer
-
-# begin
-#   $stdin.each_with_index do |line, index|
-#     producer.produce(line, topic: topic)
-
-#     # Send messages for every 10 lines.
-#     producer.deliver_messages if index % 10 == 0
-#   end
-# ensure
-#   # Make sure to send any remaining messages.
-#   producer.deliver_messages
-
-#   producer.shutdown
-# end
