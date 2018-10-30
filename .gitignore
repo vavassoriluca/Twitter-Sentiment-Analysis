@@ -1,4 +1,6 @@
 credentials.scala
 credentials.py
-lib/
 __pycache__/
+checkpoint/
+project/
+target/
