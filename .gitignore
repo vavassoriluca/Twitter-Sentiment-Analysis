@@ -1,3 +1,6 @@
 credentials.scala
 credentials.py
+checkpoint/
+project/
+target/
 __pycache__/
