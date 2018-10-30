@@ -13,7 +13,8 @@ keywords = "brexit".split()
 class StdOutListener(StreamListener):
 
     def on_data(self, data):
-        print(data.encode('utf-8'))
+        print(data)
+        time.sleep(1000)
         print("\n\n\n")
         producer.send_messages(topic, data.encode('utf-8'))
         return True
