@@ -10,12 +10,9 @@ TweetStream.configure do |config|
   config.auth_method        = :oauth
 end
 
-
 logger = Logger.new($stderr)
 brokers = ["localhost:9092"]
 
-# Make sure to create this topic in your Kafka cluster or configure the
-# cluster to auto-create topics.
 topic = "twitter"
 
 kafka = Kafka.new(brokers, client_id: "twitter-producer", logger: logger)
@@ -23,16 +20,14 @@ kafka = Kafka.new(brokers, client_id: "twitter-producer", logger: logger)
 producer = kafka.producer
 
 begin
-
-    TweetStream::Client.new.track('italy', 'italian') do |status|
-      p "#{status.text}"
-      print "\n\n\n"
-      producer.produce(status.text, topic: topic)
-      producer.deliver_messages
-    end
-    # Send messages for every 10 lines.
-    # producer.deliver_messages if index % 10 == 0 
+  TweetStream::Client.new.track('italy', 'italian') do |status|
+    p "#{status.inspect}"
+    print "\n\n\n"
+    producer.produce(status.text, topic: topic)
+    producer.deliver_messages
+  end
+  
 ensure
-  producer.deliver_messages
-  producer.shutdown
+    producer.deliver_messages
+    producer.shutdown
 end
