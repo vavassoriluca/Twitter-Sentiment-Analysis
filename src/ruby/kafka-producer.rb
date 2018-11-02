@@ -22,9 +22,11 @@ kafka = Kafka.new(brokers, client_id: "twitter-producer", logger: logger)
 
 producer = kafka.producer
 
-begin
+trackers = ['Drake']
 
-    TweetStream::Client.new.track('italy', 'italian') do |status|
+begin
+    TweetStream::Client.new.track(trackers) do |status|
+      p "#{status.user.name}"
       p "#{status.text}"
       print "\n\n\n"
       producer.produce(status.text, topic: topic)
