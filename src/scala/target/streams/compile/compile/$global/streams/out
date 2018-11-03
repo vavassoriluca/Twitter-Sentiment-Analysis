@@ -1,4 +1,4 @@
-[0m[[0m[31merror[0m] [0m[0m/home/vava/Documents/Data-Intensive-Computing/Twitter-Sentiment-Analysis/src/scala/spark-sentiment-analysis.scala:103:17: not found: value output[0m
-[0m[[0m[31merror[0m] [0m[0m                output match {[0m
-[0m[[0m[31merror[0m] [0m[0m                ^[0m
+[0m[[0m[31merror[0m] [0m[0m/Users/andreicapastru/Desktop/Data Intensive Computing/Twitter-Sentiment-Analysis/src/scala/spark-sentiment-analysis.scala:69:8: KafkaSpark is already defined as object KafkaSpark[0m
+[0m[[0m[31merror[0m] [0m[0mobject KafkaSpark {[0m
+[0m[[0m[31merror[0m] [0m[0m       ^[0m
 [0m[[0m[31merror[0m] [0m[0mone error found[0m

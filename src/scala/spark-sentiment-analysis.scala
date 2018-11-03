@@ -53,18 +53,6 @@ object SentimentAnalyzer {
 
 }
 
-object KafkaSpark {
-  def extractSentiments(text: String): List[(String, Sentiment.Sentiment)] = {
-    val annotation: Annotation = pipeline.process(text)
-    val sentences = annotation.get(classOf[CoreAnnotations.SentencesAnnotation])
-    sentences
-      .map(sentence => (sentence, sentence.get(classOf[SentimentCoreAnnotations.SentimentAnnotatedTree])))
-      .map { case (sentence, tree) => (sentence.toString,Sentiment.toSentiment(RNNCoreAnnotations.getPredictedClass(tree))) }
-      .toList
-  }
-
-}
-
 
 object KafkaSpark {
     def main(args: Array[String]) {

@@ -3,6 +3,7 @@ require_relative 'kafka-producer.rb'
 require 'thread'
 require 'chartkick'
 
+@@data = {}
 
 get '/' do
   @data = @@data
@@ -10,13 +11,13 @@ get '/' do
 end
 
 get '/ss' do #start stream
-  t1 = Thread.new(start_tweet_stream(["brexit", "uk"]))
+  t1 = Thread.new { start_tweet_stream(["brexit", "uk"])}
   redirect "/"
 end
 
 post '/payload' do
   @@data = JSON.parse(request.body.read)
-  puts "I got some JSON: #{push.inspect}"
+  puts "post /pyload:  #{@@data.inspect}"
 end
   
 
