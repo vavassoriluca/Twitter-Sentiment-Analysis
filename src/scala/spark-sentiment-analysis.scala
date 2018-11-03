@@ -31,7 +31,6 @@ object Sentiment extends Enumeration {
 }
 
 object SentimentAnalyzer {
-
     val props = new Properties()
     props.setProperty("annotators", "tokenize, ssplit, parse, sentiment")
     val pipeline: StanfordCoreNLP = new StanfordCoreNLP(props)
@@ -55,9 +54,20 @@ object SentimentAnalyzer {
 }
 
 object KafkaSpark {
+  def extractSentiments(text: String): List[(String, Sentiment.Sentiment)] = {
+    val annotation: Annotation = pipeline.process(text)
+    val sentences = annotation.get(classOf[CoreAnnotations.SentencesAnnotation])
+    sentences
+      .map(sentence => (sentence, sentence.get(classOf[SentimentCoreAnnotations.SentimentAnnotatedTree])))
+      .map { case (sentence, tree) => (sentence.toString,Sentiment.toSentiment(RNNCoreAnnotations.getPredictedClass(tree))) }
+      .toList
+  }
 
+}
+
+
+object KafkaSpark {
     def main(args: Array[String]) {
-        
         // make a connection to Kafka and read (key, value) pairs from it
         val conf = new SparkConf().setAppName("twitter-sentiment-analysis").setMaster("local[3]")
         val sc = SparkContext.getOrCreate(conf)
@@ -65,13 +75,11 @@ object KafkaSpark {
         val ssc = new StreamingContext(sc, Seconds(1))    
         ssc.checkpoint("./checkpoint")
 
-
         val kafkaConf = Map(
             "metadata.broker.list" -> "localhost:9092",
             "zookeeper.connect" -> "localhost:2181",
             "group.id" -> "kafka-spark-streaming",
             "zookeeper.connection.timeout.ms" -> "1000")
-
         val topics = Set("twitter")
         val tweets = KafkaUtils.createDirectStream[String, String, StringDecoder, StringDecoder](ssc, kafkaConf, topics)
 
