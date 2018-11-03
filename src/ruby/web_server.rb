@@ -4,33 +4,19 @@ require 'thread'
 require 'chartkick'
 
 
-template :layout do
-  <<LAYOUT
-<html>
-  <head>
-    <script src="http://www.google.com/jsapi"></script>
-    <script src="chartkick.js"></script>
-  </head>
-  <body>
-    <%= yield %>
-  </body>
-</html>
-LAYOUT
-end
-
-template :index do
-  <<INDEX
-    <%= pie_chart({"Football" => 10, "Basketball" => 5}) %>
-INDEX
-end
-
 get '/' do
+  @data = @@data
   erb :index
 end
 
 get '/ss' do #start stream
   t1 = Thread.new(start_tweet_stream(["brexit", "uk"]))
   redirect "/"
+end
+
+post '/payload' do
+  @@data = JSON.parse(request.body.read)
+  puts "I got some JSON: #{push.inspect}"
 end
   
 
