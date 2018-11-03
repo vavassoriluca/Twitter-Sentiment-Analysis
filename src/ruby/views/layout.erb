@@ -1,0 +1,11 @@
+<html>
+  <head>
+    <script src="http://www.google.com/jsapi"></script>
+    <script src="chartkick.js"></script>
+  </head>
+  <body>
+    <%= yield %>
+    <% column_chart ({"Positive" => 10, "Neutral" => 5, "Negative" => 25}) %>
+
+  </body>
+</html>
