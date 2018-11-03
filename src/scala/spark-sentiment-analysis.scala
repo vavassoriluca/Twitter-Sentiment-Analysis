@@ -9,46 +9,50 @@ import org.apache.spark.SparkContext
 import org.apache.spark.streaming._
 import org.apache.spark.streaming.kafka._
 import java.util.{Date, Properties}
+import scala.collection.convert.wrapAll._
 import org.apache.kafka.clients.producer.{KafkaProducer, ProducerRecord, ProducerConfig}
-
-import java.util.Properties
 
 import edu.stanford.nlp.ling.CoreAnnotations
 import edu.stanford.nlp.neural.rnn.RNNCoreAnnotations
 import edu.stanford.nlp.pipeline.{Annotation, StanfordCoreNLP}
 import edu.stanford.nlp.sentiment.SentimentCoreAnnotations
 
-import scala.collection.convert.wrapAll._
-
 
 object Sentiment extends Enumeration {
-  type Sentiment = Value
-  val POSITIVE, NEGATIVE, NEUTRAL = Value
+    type Sentiment = Value
+    val POSITIVE, NEGATIVE, NEUTRAL = Value
 
-  def toSentiment(sentiment: Int): Sentiment = sentiment match {
-    case x if x == 0 || x == 1 => Sentiment.NEGATIVE
-    case 2 => Sentiment.NEUTRAL
-    case x if x == 3 || x == 4 => Sentiment.POSITIVE
-  }
+    def toSentiment(sentiment: Int): Sentiment = sentiment match {
+        case x if x == 0 || x == 1 => Sentiment.NEGATIVE
+        case 2 => Sentiment.NEUTRAL
+        case x if x == 3 || x == 4 => Sentiment.POSITIVE
+    }
 }
 
 object SentimentAnalyzer {
+    val props = new Properties()
+    props.setProperty("annotators", "tokenize, ssplit, parse, sentiment")
+    val pipeline: StanfordCoreNLP = new StanfordCoreNLP(props)
 
-  val props = new Properties()
-  props.setProperty("annotators", "tokenize, ssplit, parse, sentiment")
-  val pipeline: StanfordCoreNLP = new StanfordCoreNLP(props)
+    def extractSentiments(text: String): List[(String, Int)] = {
+        val annotation: Annotation = pipeline.process(text)
+        val sentences = annotation.get(classOf[CoreAnnotations.SentencesAnnotation])
+        sentences
+          .map(sentence => (sentence, sentence.get(classOf[SentimentCoreAnnotations.SentimentAnnotatedTree])))
+          .map { case (sentence, tree) => (sentence.toString,RNNCoreAnnotations.getPredictedClass(tree)) }
+          .toList
+    }
 
-  def mainSentiment(input: String): Sentiment.Sentiment = Option(input) match {
-    case Some(text) if !text.isEmpty => extractSentiment(text)
-    case _ => throw new IllegalArgumentException("input can't be null or empty")
-  }
+    def sentimentAvg(list: List[(String, Int)]) : Float = {
+        var count = list.length
+        var sum: Float = 0.0.toFloat
+        list.foreach(t => sum += t._2.toFloat)
+        return sum / count
+    }
 
-  private def extractSentiment(text: String): Sentiment.Sentiment = {
-    val (_, sentiment) = extractSentiments(text)
-      .maxBy { case (sentence, _) => sentence.length }
-    sentiment
-  }
+}
 
+object KafkaSpark {
   def extractSentiments(text: String): List[(String, Sentiment.Sentiment)] = {
     val annotation: Annotation = pipeline.process(text)
     val sentences = annotation.get(classOf[CoreAnnotations.SentencesAnnotation])
@@ -69,6 +73,7 @@ object KafkaSpark {
         sc.setLogLevel("WARN")
         val ssc = new StreamingContext(sc, Seconds(1))    
         ssc.checkpoint("./checkpoint")
+
         val kafkaConf = Map(
             "metadata.broker.list" -> "localhost:9092",
             "zookeeper.connect" -> "localhost:2181",
@@ -76,7 +81,50 @@ object KafkaSpark {
             "zookeeper.connection.timeout.ms" -> "1000")
         val topics = Set("twitter")
         val tweets = KafkaUtils.createDirectStream[String, String, StringDecoder, StringDecoder](ssc, kafkaConf, topics)
-        tweets.map{t => (t._2, SentimentAnalyzer.mainSentiment(t._2))}.print()
+
+        //val tweetsCount = sc.longAccumulator("tweetsCount")
+        //val tweetsSentiment = sc.floatAccumulator("tweetsSentiment")
+
+        // measure the average value for each key in a stateful manner
+        def stateUpdateFunction(key: String, value: Option[List[(String, Int)]], state: State[(Long, Long, Long, Long, Long, Float)]): Float = {
+            
+            var oldState: (Long, Long, Long, Long, Long, Float) = state.getOption.getOrElse[(Long, Long, Long, Long, Long, Float)]((0.toLong, 0.toLong, 0.toLong, 0.toLong, 0.toLong, 0.0.toFloat))
+            val sum = oldState._1 * oldState._6
+            var newCount = oldState._1 + 1
+            var count0 = oldState._2
+            var count1 = oldState._3
+            var count2 = oldState._4
+            var count3 = oldState._5
+            val list = value.get
+            val countSentiment = list.length
+            var sumSentiment: Float = 0.0.toFloat
+            list.foreach(t => sumSentiment += t._2.toFloat)
+            if (value.isEmpty) {
+                state.update(oldState)
+                return sumSentiment
+            }
+            else  {
+                val output = sumSentiment / countSentiment
+                output match {
+                    case x if x >= 0 && x < 1 => count0 += 1
+                    case x if x >= 1 && x < 2 => count1 += 1
+                    case x if x >= 2 && x < 3 => count2 += 1
+                    case x if x >= 3 => count3 += 1
+                }
+                val newState: (Long, Long, Long, Long, Long, Float) = (newCount, count0, count1, count2, count3, (sum + output) / newCount)
+                println(newState)
+                state.update(newState)
+                return output
+            }
+            
+        }
+
+        val sentiments = tweets.map{tweet => (tweet._1, SentimentAnalyzer.extractSentiments(tweet._2))}
+            .mapWithState(StateSpec.function(stateUpdateFunction _))
+        sentiments.print()
+        //sentiments.foreachRDD{rdd => tweetsSentiment.add(rdd.sum()); println(tweetsSentiment.value)}
+        //tweets.foreachRDD{rdd => tweetsCount.add(rdd.count()); println(tweetsCount.value)}
+        //tweets.foreachRDD{rdd => println(tweetsSentiment.value / tweetsCount.value)}
         ssc.start()
         ssc.awaitTermination()
     

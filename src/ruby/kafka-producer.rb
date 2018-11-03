@@ -19,8 +19,11 @@ def start_tweet_stream tracks
 
   producer = kafka.producer
 
-  begin
-    TweetStream::Client.new.track(tracks) do |status|
+trackers = ['Drake']
+
+begin
+    TweetStream::Client.new.track(trackers) do |status|
+      p "#{status.user.name}"
       p "#{status.text}"
       print "\n\n\n"
       producer.produce(status.text, topic: topic)
