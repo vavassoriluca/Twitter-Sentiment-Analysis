@@ -4,7 +4,7 @@
 		module="spark-sentiment-analysis_2.11"
 		revision="1.0"
 		status="integration"
-		publication="20181030124203"
+		publication="20181103115806"
 	>
 		<description>
 		spark-sentiment-analysis
@@ -39,5 +39,6 @@
 			<artifact name="stanford-corenlp" type="jar" ext="jar" conf="*" e:classifier="models"/>
 			<artifact name="stanford-corenlp" type="jar" ext="jar" conf="*"/>
 		</dependency>
+		<dependency org="org.scalaj" name="scalaj-http_2.11" rev="2.4.1" conf="compile->default(compile)"/>
 	</dependencies>
 </ivy-module>

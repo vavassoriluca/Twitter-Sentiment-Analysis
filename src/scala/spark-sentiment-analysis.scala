@@ -17,6 +17,7 @@ import edu.stanford.nlp.neural.rnn.RNNCoreAnnotations
 import edu.stanford.nlp.pipeline.{Annotation, StanfordCoreNLP}
 import edu.stanford.nlp.sentiment.SentimentCoreAnnotations
 
+import scalaj.http._
 
 object Sentiment extends Enumeration {
     type Sentiment = Value
@@ -82,11 +83,13 @@ object KafkaSpark {
         val topics = Set("twitter")
         val tweets = KafkaUtils.createDirectStream[String, String, StringDecoder, StringDecoder](ssc, kafkaConf, topics)
 
-        //val tweetsCount = sc.longAccumulator("tweetsCount")
-        //val tweetsSentiment = sc.floatAccumulator("tweetsSentiment")
+        def stateToJson(state: (Long, Long, Long, Long, Long, Float)): String = {
+            val json = s"{${'"'}tweets${'"'}: $state._1, ${'"'}negative${'"'}: $state._2, ${'"'}semi-negative${'"'}: $state._3,${'"'}semi-positive${'"'}: $state._4, ${'"'}positive${'"'}: $state._5, ${'"'}avg${'"'}: $state._6}"
+            return json
+        }
 
         // measure the average value for each key in a stateful manner
-        def stateUpdateFunction(key: String, value: Option[List[(String, Int)]], state: State[(Long, Long, Long, Long, Long, Float)]): Float = {
+        def stateUpdateFunction(key: String, value: Option[List[(String, Int)]], state: State[(Long, Long, Long, Long, Long, Float)]): String = {
             
             var oldState: (Long, Long, Long, Long, Long, Float) = state.getOption.getOrElse[(Long, Long, Long, Long, Long, Float)]((0.toLong, 0.toLong, 0.toLong, 0.toLong, 0.toLong, 0.0.toFloat))
             val sum = oldState._1 * oldState._6
@@ -101,33 +104,34 @@ object KafkaSpark {
             list.foreach(t => sumSentiment += t._2.toFloat)
             if (value.isEmpty) {
                 state.update(oldState)
-                return sumSentiment
+                return stateToJson(oldState)
             }
             else  {
-                val output = sumSentiment / countSentiment
-                output match {
+                val finalSentiment = sumSentiment / countSentiment
+                finalSentiment match {
                     case x if x >= 0 && x < 1 => count0 += 1
                     case x if x >= 1 && x < 2 => count1 += 1
                     case x if x >= 2 && x < 3 => count2 += 1
                     case x if x >= 3 => count3 += 1
                 }
-                val newState: (Long, Long, Long, Long, Long, Float) = (newCount, count0, count1, count2, count3, (sum + output) / newCount)
-                println(newState)
+                val newState: (Long, Long, Long, Long, Long, Float) = (newCount, count0, count1, count2, count3, (sum + finalSentiment) / newCount)
                 state.update(newState)
-                return output
+                return stateToJson(newState)
             }
             
         }
 
         val sentiments = tweets.map{tweet => (tweet._1, SentimentAnalyzer.extractSentiments(tweet._2))}
             .mapWithState(StateSpec.function(stateUpdateFunction _))
-        sentiments.print()
-        //sentiments.foreachRDD{rdd => tweetsSentiment.add(rdd.sum()); println(tweetsSentiment.value)}
-        //tweets.foreachRDD{rdd => tweetsCount.add(rdd.count()); println(tweetsCount.value)}
-        //tweets.foreachRDD{rdd => println(tweetsSentiment.value / tweetsCount.value)}
+            .foreachRDD { rdd =>
+                rdd.foreachPartition { partitionOfRecords =>
+                    val request: HttpRequest = Http("http://localhost:4567/payload")
+                    partitionOfRecords.foreach(record => request.postForm(Seq("body" -> record)))
+                }
+            }
+
         ssc.start()
         ssc.awaitTermination()
-    
     }
 
 }
