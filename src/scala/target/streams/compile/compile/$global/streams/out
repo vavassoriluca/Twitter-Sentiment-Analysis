@@ -1,6 +1,4 @@
-[0m[[0m[31merror[0m] [0m[0m/home/vava/Documents/Data-Intensive-Computing/Twitter-Sentiment-Analysis/src/scala/spark-sentiment-analysis.scala:92:132: type mismatch;[0m
-[0m[[0m[31merror[0m] [0m[0m found   : (Long, Long, Long, Long, Float)[0m
-[0m[[0m[31merror[0m] [0m[0m required: (Long, Long, Long, Long, Long, Float)[0m
-[0m[[0m[31merror[0m] [0m[0m            var oldState: (Long, Long, Long, Long, Long, Float) = state.getOption.getOrElse[(Long, Long, Long, Long, Long, Float)]((0.toLong, 0.toLong, 0.toLong, 0.toLong, 0.0.toFloat))[0m
-[0m[[0m[31merror[0m] [0m[0m                                                                                                                                   ^[0m
+[0m[[0m[31merror[0m] [0m[0m/home/vava/Documents/Data-Intensive-Computing/Twitter-Sentiment-Analysis/src/scala/spark-sentiment-analysis.scala:103:17: not found: value output[0m
+[0m[[0m[31merror[0m] [0m[0m                output match {[0m
+[0m[[0m[31merror[0m] [0m[0m                ^[0m
 [0m[[0m[31merror[0m] [0m[0mone error found[0m
