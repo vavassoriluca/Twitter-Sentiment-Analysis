@@ -1,3 +1,6 @@
- <%= column_chart @data,  colors: ["#b53", "#666", "#262"] %>
 
- <div> <a href="/ss"><button>Start TweetStreaming</button></a></div>
+
+ <div align="center" id="chart" height="50%"> <%= column_chart @data,  colors: ["#b53", "#666", "#262"] %> </div>
+
+<div align="center"> <a href="/ss"><button>Start TweetStreaming</button></a></div>
+<div align="center"> <a href="/stop"><button>Stop TweetStreaming</button></a></div>

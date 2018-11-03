@@ -1,4 +1,7 @@
-[0m[[0m[31merror[0m] [0m[0m/Users/andreicapastru/Desktop/Data Intensive Computing/Twitter-Sentiment-Analysis/src/scala/spark-sentiment-analysis.scala:69:8: KafkaSpark is already defined as object KafkaSpark[0m
-[0m[[0m[31merror[0m] [0m[0mobject KafkaSpark {[0m
-[0m[[0m[31merror[0m] [0m[0m       ^[0m
-[0m[[0m[31merror[0m] [0m[0mone error found[0m
+[0m[[0m[31merror[0m] [0m[0m/Users/andreicapastru/Desktop/Data Intensive Computing/Twitter-Sentiment-Analysis/src/scala/spark-sentiment-analysis.scala:117:111: ')' expected but '}' found.[0m
+[0m[[0m[31merror[0m] [0m[0m                    partitionOfRecords.foreach{record => print(record); request.postForm(Seq("body" -> record)})[0m
+[0m[[0m[31merror[0m] [0m[0m                                                                                                              ^[0m
+[0m[[0m[31merror[0m] [0m[0m/Users/andreicapastru/Desktop/Data Intensive Computing/Twitter-Sentiment-Analysis/src/scala/spark-sentiment-analysis.scala:117:112: ';' expected but ')' found.[0m
+[0m[[0m[31merror[0m] [0m[0m                    partitionOfRecords.foreach{record => print(record); request.postForm(Seq("body" -> record)})[0m
+[0m[[0m[31merror[0m] [0m[0m                                                                                                               ^[0m
+[0m[[0m[31merror[0m] [0m[0mtwo errors found[0m

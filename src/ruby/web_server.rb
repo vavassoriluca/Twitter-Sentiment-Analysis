@@ -11,7 +11,18 @@ get '/' do
 end
 
 get '/ss' do #start stream
-  t1 = Thread.new { start_tweet_stream(["brexit", "uk"])}
+  puts "started streaming"
+  @@t1 = Thread.new { start_tweet_stream(["brexit", "uk"])}
+  redirect "/"
+end
+
+get '/stop' do
+  puts "stopped streaming"
+  begin
+    Thread.kill(@@t1)
+  rescue
+    puts "no streaming started"
+  end
   redirect "/"
 end
 
