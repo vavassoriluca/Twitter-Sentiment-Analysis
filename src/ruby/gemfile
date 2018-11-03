@@ -1,0 +1,9 @@
+require 'rubygems'
+source 'https://rubygems.org'
+
+gem 'sinatra'
+gem 'thread'
+gem 'chartkick'
+
+gem 'tweetstream'
+gem 'ruby-kafka'
