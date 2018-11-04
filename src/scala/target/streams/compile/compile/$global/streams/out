@@ -1,7 +1,5 @@
-[0m[[0m[31merror[0m] [0m[0m/Users/andreicapastru/Desktop/Data Intensive Computing/Twitter-Sentiment-Analysis/src/scala/spark-sentiment-analysis.scala:117:111: ')' expected but '}' found.[0m
-[0m[[0m[31merror[0m] [0m[0m                    partitionOfRecords.foreach{record => print(record); request.postForm(Seq("body" -> record)})[0m
-[0m[[0m[31merror[0m] [0m[0m                                                                                                              ^[0m
-[0m[[0m[31merror[0m] [0m[0m/Users/andreicapastru/Desktop/Data Intensive Computing/Twitter-Sentiment-Analysis/src/scala/spark-sentiment-analysis.scala:117:112: ';' expected but ')' found.[0m
-[0m[[0m[31merror[0m] [0m[0m                    partitionOfRecords.foreach{record => print(record); request.postForm(Seq("body" -> record)})[0m
-[0m[[0m[31merror[0m] [0m[0m                                                                                                               ^[0m
-[0m[[0m[31merror[0m] [0m[0mtwo errors found[0m
+[0m[[0m[31merror[0m] [0m[0m/home/vava/Documents/Data-Intensive-Computing/Twitter-Sentiment-Analysis/src/scala/spark-sentiment-analysis.scala:115:77: not enough arguments for method apply: (url: String, method: String, connectFunc: scalaj.http.HttpConstants.HttpExec, params: Seq[(String, String)], headers: Seq[(String, String)], options: Seq[scalaj.http.HttpOptions.HttpOption], proxyConfig: Option[java.net.Proxy], charset: String, sendBufferSize: Int, urlBuilder: scalaj.http.HttpRequest => String, compress: Boolean, digestCreds: Option[(String, String)])scalaj.http.HttpRequest in object HttpRequest.[0m
+[0m[[0m[31merror[0m] [0m[0mUnspecified value parameters method, connectFunc, params...[0m
+[0m[[0m[31merror[0m] [0m[0m                    partitionOfRecords.foreach(record => println(HttpRequest("localhost:4567/payload").param("body", record).postData("foo").toString))[0m
+[0m[[0m[31merror[0m] [0m[0m                                                                            ^[0m
+[0m[[0m[31merror[0m] [0m[0mone error found[0m
