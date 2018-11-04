@@ -62,12 +62,13 @@ object KafkaSpark {
                 return stateToJson(oldState)
             }
             else  {
+                var finalValue: Float = 2.toFloat
                 value.get match {
-                    case x if x >= 0 && x < 1.6 => count0 += 1
-                    case x if x >= 1.6 && x < 3 => count1 += 1
-                    case x if x >= 3 => count2 += 1
+                    case x if x >= 0 && x < 1.5 => {count0 += 1; finalValue = 0.75.toFloat}
+                    case x if x >= 1.5 && x < 2.5 => {count1 += 1; finalValue = 2.toFloat}
+                    case x if x >= 2.5 => {count2 += 1; finalValue = 3.25.toFloat}
                 }
-                val newState: (Long, Long, Long, Long, Float) = (newCount, count0, count1, count2, (sum + value.get) / newCount)
+                val newState: (Long, Long, Long, Long, Float) = (newCount, count0, count1, count2, (sum + finalValue) / newCount)
                 state.update(newState)
                 //println(newState)
                 return stateToJson(newState)
@@ -77,7 +78,11 @@ object KafkaSpark {
 
         // ******** SPARK STREAMING JOB ********
 
-        val sentiments = tweets.map{tweet => (tweet._1, SentimentAnalyzer.extractSentiment(tweet._2))}
+        val sentiments = tweets.map{tweet => 
+                val key = tweet._2.split("@B1A2R3R4I5E6R7@")(0)
+                val value = tweet._2.split("@B1A2R3R4I5E6R7@")(1)
+                (key, SentimentAnalyzer.extractSentiment(value))
+            }
             .mapWithState(StateSpec.function(stateUpdateFunction _))
             .foreachRDD { rdd =>
                 rdd.foreachPartition { partitionOfRecords =>

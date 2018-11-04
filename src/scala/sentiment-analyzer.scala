@@ -15,9 +15,9 @@ object Sentiment extends Enumeration {
     val POSITIVE, NEGATIVE, NEUTRAL = Value
 
     def toSentiment(sentiment: Int): Sentiment = sentiment match {
-        case x if x >= 0 || x < 1.6 => Sentiment.NEGATIVE
-        case x if x >= 1.6 || x < 3 => Sentiment.NEUTRAL
-        case x if x >= 3 => Sentiment.POSITIVE
+        case x if x >= 0 || x < 1.5 => Sentiment.NEGATIVE
+        case x if x >= 1.5 || x < 2.5 => Sentiment.NEUTRAL
+        case x if x >= 2.5 => Sentiment.POSITIVE
     }
 }
 
