@@ -8,55 +8,21 @@ import org.apache.spark.SparkConf
 import org.apache.spark.SparkContext
 import org.apache.spark.streaming._
 import org.apache.spark.streaming.kafka._
-import java.util.{Date, Properties}
 import scala.collection.convert.wrapAll._
 import org.apache.kafka.clients.producer.{KafkaProducer, ProducerRecord, ProducerConfig}
 
-import edu.stanford.nlp.ling.CoreAnnotations
-import edu.stanford.nlp.neural.rnn.RNNCoreAnnotations
-import edu.stanford.nlp.pipeline.{Annotation, StanfordCoreNLP}
-import edu.stanford.nlp.sentiment.SentimentCoreAnnotations
-
 import scalaj.http._
 
-object Sentiment extends Enumeration {
-    type Sentiment = Value
-    val POSITIVE, NEGATIVE, NEUTRAL = Value
-
-    def toSentiment(sentiment: Int): Sentiment = sentiment match {
-        case x if x == 0 || x == 1 => Sentiment.NEGATIVE
-        case 2 => Sentiment.NEUTRAL
-        case x if x == 3 || x == 4 => Sentiment.POSITIVE
-    }
-}
-
-object SentimentAnalyzer {
-    val props = new Properties()
-    props.setProperty("annotators", "tokenize, ssplit, parse, sentiment")
-    val pipeline: StanfordCoreNLP = new StanfordCoreNLP(props)
-
-    def extractSentiments(text: String): List[(String, Int)] = {
-        val annotation: Annotation = pipeline.process(text)
-        val sentences = annotation.get(classOf[CoreAnnotations.SentencesAnnotation])
-        sentences
-          .map(sentence => (sentence, sentence.get(classOf[SentimentCoreAnnotations.SentimentAnnotatedTree])))
-          .map { case (sentence, tree) => (sentence.toString,RNNCoreAnnotations.getPredictedClass(tree)) }
-          .toList
-    }
-
-    def sentimentAvg(list: List[(String, Int)]) : Float = {
-        var count = list.length
-        var sum: Float = 0.0.toFloat
-        list.foreach(t => sum += t._2.toFloat)
-        return sum / count
-    }
-
-}
+import sparkstreaming._
 
 
 object KafkaSpark {
+
     def main(args: Array[String]) {
-        // make a connection to Kafka and read (key, value) pairs from it
+
+        // ******** KAFKA CONSUMER ********
+
+        // make a connection to Kafka 
         val conf = new SparkConf().setAppName("twitter-sentiment-analysis").setMaster("local[3]")
         val sc = SparkContext.getOrCreate(conf)
         sc.setLogLevel("WARN")
@@ -68,16 +34,22 @@ object KafkaSpark {
             "zookeeper.connect" -> "localhost:2181",
             "group.id" -> "kafka-spark-streaming",
             "zookeeper.connection.timeout.ms" -> "1000")
+
         val topics = Set("twitter")
+
+        // DirectSream from Kafka
         val tweets = KafkaUtils.createDirectStream[String, String, StringDecoder, StringDecoder](ssc, kafkaConf, topics)
 
+        //Function to covert the State to a Json string
         def stateToJson(state: (Long, Long, Long, Long, Float)): String = {
             val json = s"{${'"'}tweets${'"'}: ${state._1}, ${'"'}negative${'"'}: ${state._2}, ${'"'}neutral${'"'}: ${state._3},${'"'}positive${'"'}: ${state._4}, ${'"'}avg${'"'}: ${state._5}}"
             return json
         }
 
-        // measure the average value for each key in a stateful manner
-        def stateUpdateFunction(key: String, value: Option[List[(String, Int)]], state: State[(Long, Long, Long, Long, Float)]): String = {
+        // Receive as Input a list of Lines of a tweet along with the related sentiment
+        // The Output consists of a Json representation of the new state
+        // The State is a tuple that consists of number of tweets precessed, number of negative, neutral and positive tweets, sentiment average
+        def stateUpdateFunction(key: String, value: Option[Float], state: State[(Long, Long, Long, Long, Float)]): String = {
             
             var oldState: (Long, Long, Long, Long, Float) = state.getOption.getOrElse[(Long, Long, Long, Long, Float)]((0.toLong, 0.toLong, 0.toLong, 0.toLong, 0.0.toFloat))
             val sum = oldState._1 * oldState._5
@@ -85,36 +57,27 @@ object KafkaSpark {
             var count0 = oldState._2
             var count1 = oldState._3
             var count2 = oldState._4
-            val list = value.get
-            val countSentiment = list.length
-            var sumSentiment: Float = 0.0.toFloat
-            list.foreach(t => sumSentiment += t._2.toFloat)
-            if (value.isEmpty) {
+            if (value.isEmpty || value.get == -1) {
                 state.update(oldState)
                 return stateToJson(oldState)
             }
             else  {
-                val finalSentiment = sumSentiment / countSentiment
-
-                if (finalSentiment.isNaN || finalSentiment.isInfinity) {
-                    state.update(oldState)
-                    return stateToJson(oldState)
-                } else {
-                    finalSentiment match {
-                        case x if x >= 0 && x < 1.75 => count0 += 1
-                        case x if x >= 1.75 && x < 3 => count1 += 1
-                        case x if x >= 3 => count2 += 1
-                    }
-                    val newState: (Long, Long, Long, Long, Float) = (newCount, count0, count1, count2, (sum + finalSentiment) / newCount)
-                    state.update(newState)
-                    //println(newState)
-                    return stateToJson(newState)
+                value.get match {
+                    case x if x >= 0 && x < 1.6 => count0 += 1
+                    case x if x >= 1.6 && x < 3 => count1 += 1
+                    case x if x >= 3 => count2 += 1
                 }
+                val newState: (Long, Long, Long, Long, Float) = (newCount, count0, count1, count2, (sum + value.get) / newCount)
+                state.update(newState)
+                //println(newState)
+                return stateToJson(newState)
             }
             
         }
 
-        val sentiments = tweets.map{tweet => (tweet._1, SentimentAnalyzer.extractSentiments(tweet._2))}
+        // ******** SPARK STREAMING JOB ********
+
+        val sentiments = tweets.map{tweet => (tweet._1, SentimentAnalyzer.extractSentiment(tweet._2))}
             .mapWithState(StateSpec.function(stateUpdateFunction _))
             .foreachRDD { rdd =>
                 rdd.foreachPartition { partitionOfRecords =>
