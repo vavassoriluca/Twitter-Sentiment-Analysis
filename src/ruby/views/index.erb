@@ -11,10 +11,10 @@
   
   <%= pie_chart "http://localhost:4567/json", refresh: 2, donut: true, legend: "bottom", colors: ["red", "blue", "green"] %>
 
-  <div align="center"> 
+  <div align="center" id="data"> 
     <h4>
-      #tweets = <strong><%= @total_tweets %></strong>; 
-      Average score = <strong><%= @average %> out of 5</strong> 
+      #tweets = <strong id="tweets"><%= @total_tweets %></strong>; 
+      Average score = <strong id="avg"><%= @average %> out of 5</strong> 
     </h4> 
   </div>
 
@@ -26,9 +26,15 @@
 </div>
 
 <script type="text/javascript">
-  var chart_data = {};
-  $.getJSON( "http://localhost:4567/json", function( got_this_json ) {
-    chart_data = got_this_json;
-  });
+  var tweets_avg;
+
+  function  update_data() {
+    $.getJSON( "http://localhost:4567/tweetsavg", function( got_this_json ) {
+      tweets_avg = got_this_json;
+    });
+    $("#tweets").text(tweets_avg["tweets"]);
+    $("#avg").text(tweets_avg["avg"]);
+  }
+  setInterval(update_data, 2000);
 
 </script>

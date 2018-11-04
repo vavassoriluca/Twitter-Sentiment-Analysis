@@ -58,3 +58,12 @@ get '/input' do
   @@trackers = @input.split
   redirect "/"
 end
+
+get '/tweetsavg' do
+  content_type :json
+  @@tw_avg = @@data.clone
+  @@tw_avg.delete("positive") 
+  @@tw_avg.delete("negative")
+  @@tw_avg.delete("neutral")
+  @@tw_avg.to_json
+end
