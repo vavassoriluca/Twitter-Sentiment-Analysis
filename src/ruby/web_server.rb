@@ -4,7 +4,7 @@ require 'thread'
 require 'chartkick'
 
 @@data = {"Nothing" => 10}
-@@trackers = ["brexit", "uk"]
+@@trackers = ["brexit", "uk"].sort
 @@chart_data = {}
 
 
@@ -55,7 +55,7 @@ end
 
 get '/input' do
   @input = params[:input]
-  @@trackers = @input.split
+  @@trackers = @input.split.sort
   redirect "/"
 end
 

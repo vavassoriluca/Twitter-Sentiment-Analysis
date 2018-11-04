@@ -50,7 +50,7 @@ object KafkaSpark {
         // The Output consists of a Json representation of the new state
         // The State is a tuple that consists of number of tweets precessed, number of negative, neutral and positive tweets, sentiment average
         def stateUpdateFunction(key: String, value: Option[Float], state: State[(Long, Long, Long, Long, Float)]): String = {
-            
+         
             var oldState: (Long, Long, Long, Long, Float) = state.getOption.getOrElse[(Long, Long, Long, Long, Float)]((0.toLong, 0.toLong, 0.toLong, 0.toLong, 0.0.toFloat))
             val sum = oldState._1 * oldState._5
             var newCount = oldState._1 + 1
