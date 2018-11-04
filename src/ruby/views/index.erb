@@ -1,10 +1,33 @@
 
+<div align="center"> <h3>Trackers = <strong><%= @trackers.join(", ")  %> </strong> </h3> 
+<section class="measure p2" id="forms">
+  <div align="center">
+    <form method="get" role="form" action="/input">
+      <input type="text" name="input" placeholder="Introduce new, space separated trackers" /> 
+      <input type="submit" value="Submit"  class="btn--grey" />
+    </form>
+  </div>
+</section>
+  
+  <!-- <%= column_chart @data,  colors: ["#b53"] %>  -->
+  <%= pie_chart "http://localhost:4567/json", refresh: 2, donut: true, legend: "bottom", colors: ["red", "blue", "green"] %>
 
- <%= column_chart @data,  colors: ["#b53"] %> 
+  <div align="center"> <h4>#tweets = <strong><%= @total_tweets %></strong>; Average score = <strong><%= @average %> out of 5   </strong> </h4> </div>
 
-<div align="center"> <a class='btn ' onClick="window.location.reload()">Refresh</a></div>
 
-<br/>
-<div align="center"> <a href="/ss" class="btn--green">Start TweetStreaming</a>
- <a href="/stop" class="btn btn--red">Stop TweetStreaming</a>
+  <div align="center"> <a class='btn ' onClick="window.location.reload()">Refresh</a></div>
+
+  <br/>
+  <div align="center"> <a href="/ss" class="btn--green">Start TweetStreaming</a>
+   <a href="/stop" class="btn btn--red">Stop TweetStreaming</a>
+ </div>
+
 </div>
+
+<script type="text/javascript">
+  var chart_data = {};
+  $.getJSON( "http://localhost:4567/json", function( got_this_json ) {
+    chart_data = got_this_json;
+  });
+
+</script>

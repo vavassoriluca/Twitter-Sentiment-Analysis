@@ -3,16 +3,29 @@ require_relative 'kafka-producer.rb'
 require 'thread'
 require 'chartkick'
 
-@@data = {test:10}
+@@data = {"Nothing" => 10}
+@@trackers = ["brexit", "uk"]
+@@chart_data = {}
+
 
 get '/' do
-  @data = @@data
+  @trackers  = @@trackers
+  begin
+    @data         = @@data.clone
+    @data.delete("tweets") 
+    @data.delete("avg")
+    @average      = @@data["avg"]
+    @total_tweets = @@data["tweets"]
+  rescue Exception => e
+    puts e
+  end
   erb :index
 end
 
+
 get '/ss' do #start stream
   puts "started streaming"
-  @@t1 = Thread.new { start_tweet_stream(["brexit", "uk"])}
+  @@t1 = Thread.new { start_tweet_stream(@@trackers)}
   redirect "/"
 end
 
@@ -33,7 +46,15 @@ end
 
 get '/json' do
   content_type :json
-  @@data.to_json
+  @@chart_data = @@data.clone
+  @@chart_data.delete("tweets") 
+  @@chart_data.delete("avg")
+  @@chart_data.to_json
 end
   
 
+get '/input' do
+  @input = params[:input]
+  @@trackers = @input.split
+  redirect "/"
+end
