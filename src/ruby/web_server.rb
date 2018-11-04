@@ -3,7 +3,7 @@ require_relative 'kafka-producer.rb'
 require 'thread'
 require 'chartkick'
 
-@@data = {}
+@@data = {test:10}
 
 get '/' do
   @data = @@data

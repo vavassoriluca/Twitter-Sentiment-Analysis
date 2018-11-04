@@ -1,6 +1,10 @@
 
 
- <div align="center" id="chart" height="50%"> <%= column_chart @data,  colors: ["#b53", "#666", "#262"] %> </div>
+ <%= column_chart @data,  colors: ["#b53"] %> 
 
-<div align="center"> <a href="/ss"><button>Start TweetStreaming</button></a></div>
-<div align="center"> <a href="/stop"><button>Stop TweetStreaming</button></a></div>
+<div align="center"> <a class='btn ' onClick="window.location.reload()">Refresh</a></div>
+
+<br/>
+<div align="center"> <a href="/ss" class="btn--green">Start TweetStreaming</a>
+ <a href="/stop" class="btn btn--red">Stop TweetStreaming</a>
+</div>
