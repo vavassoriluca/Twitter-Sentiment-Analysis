@@ -28,7 +28,7 @@ end
 
 post '/payload' do
   @@data = JSON.parse(request.body.read)
-  puts "post /pyload:  #{@@data.inspect}"
+  puts "post /payload:  #{@@data.inspect}"
 end
 
 get '/json' do

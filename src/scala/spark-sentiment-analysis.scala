@@ -71,21 +71,20 @@ object KafkaSpark {
         val topics = Set("twitter")
         val tweets = KafkaUtils.createDirectStream[String, String, StringDecoder, StringDecoder](ssc, kafkaConf, topics)
 
-        def stateToJson(state: (Long, Long, Long, Long, Long, Float)): String = {
-            val json = s"{${'"'}tweets${'"'}: $state._1, ${'"'}negative${'"'}: $state._2, ${'"'}semi-negative${'"'}: $state._3,${'"'}semi-positive${'"'}: $state._4, ${'"'}positive${'"'}: $state._5, ${'"'}avg${'"'}: $state._6}"
+        def stateToJson(state: (Long, Long, Long, Long, Float)): String = {
+            val json = s"{${'"'}tweets${'"'}: ${state._1}, ${'"'}negative${'"'}: ${state._2}, ${'"'}neutral${'"'}: ${state._3},${'"'}positive${'"'}: ${state._4}, ${'"'}avg${'"'}: ${state._5}}"
             return json
         }
 
         // measure the average value for each key in a stateful manner
-        def stateUpdateFunction(key: String, value: Option[List[(String, Int)]], state: State[(Long, Long, Long, Long, Long, Float)]): String = {
+        def stateUpdateFunction(key: String, value: Option[List[(String, Int)]], state: State[(Long, Long, Long, Long, Float)]): String = {
             
-            var oldState: (Long, Long, Long, Long, Long, Float) = state.getOption.getOrElse[(Long, Long, Long, Long, Long, Float)]((0.toLong, 0.toLong, 0.toLong, 0.toLong, 0.toLong, 0.0.toFloat))
-            val sum = oldState._1 * oldState._6
+            var oldState: (Long, Long, Long, Long, Float) = state.getOption.getOrElse[(Long, Long, Long, Long, Float)]((0.toLong, 0.toLong, 0.toLong, 0.toLong, 0.0.toFloat))
+            val sum = oldState._1 * oldState._5
             var newCount = oldState._1 + 1
             var count0 = oldState._2
             var count1 = oldState._3
             var count2 = oldState._4
-            var count3 = oldState._5
             val list = value.get
             val countSentiment = list.length
             var sumSentiment: Float = 0.0.toFloat
@@ -96,15 +95,21 @@ object KafkaSpark {
             }
             else  {
                 val finalSentiment = sumSentiment / countSentiment
-                finalSentiment match {
-                    case x if x >= 0 && x < 1 => count0 += 1
-                    case x if x >= 1 && x < 2 => count1 += 1
-                    case x if x >= 2 && x < 3 => count2 += 1
-                    case x if x >= 3 => count3 += 1
+
+                if (finalSentiment.isNaN || finalSentiment.isInfinity) {
+                    state.update(oldState)
+                    return stateToJson(oldState)
+                } else {
+                    finalSentiment match {
+                        case x if x >= 0 && x < 1.75 => count0 += 1
+                        case x if x >= 1.75 && x < 3 => count1 += 1
+                        case x if x >= 3 => count2 += 1
+                    }
+                    val newState: (Long, Long, Long, Long, Float) = (newCount, count0, count1, count2, (sum + finalSentiment) / newCount)
+                    state.update(newState)
+                    //println(newState)
+                    return stateToJson(newState)
                 }
-                val newState: (Long, Long, Long, Long, Long, Float) = (newCount, count0, count1, count2, count3, (sum + finalSentiment) / newCount)
-                state.update(newState)
-                return stateToJson(newState)
             }
             
         }
@@ -113,8 +118,11 @@ object KafkaSpark {
             .mapWithState(StateSpec.function(stateUpdateFunction _))
             .foreachRDD { rdd =>
                 rdd.foreachPartition { partitionOfRecords =>
-                    val request: HttpRequest = Http("http://localhost:4567/payload")
-                    partitionOfRecords.foreach(record => request.postForm(Seq("body" -> record)))
+                    partitionOfRecords.foreach{record => 
+                        val request: HttpRequest = Http("http://localhost:4567/payload").postData(record)
+                        println(record)
+                        request.execute()
+                    }
                 }
             }
 
