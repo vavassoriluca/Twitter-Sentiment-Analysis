@@ -24,8 +24,8 @@ def start_tweet_stream tracks
       p "#{status.user.name}"
       p "#{status.text}"
       print "\n\n\n"
-      # tweet = Tuple.new(tracks.join, status.text)
-      producer.produce(status.text, topic: topic)
+      message = tracks.join + "@B1A2R3R4I5E6R7@" + status.text
+      producer.produce(message, topic: topic)
       producer.deliver_messages
   end
     
