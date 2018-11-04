@@ -36,7 +36,7 @@ get '/stop' do
   rescue
     puts "no streaming started"
   end
-  redirect "/"
+  redirect "/ss"
 end
 
 post '/payload' do
@@ -56,7 +56,7 @@ end
 get '/input' do
   @input = params[:input]
   @@trackers = @input.split.sort
-  redirect "/"
+  redirect "/stop"
 end
 
 get '/tweetsavg' do
