@@ -28,7 +28,7 @@ begin
     producer.produce(status.text, topic: topic)
     producer.deliver_messages
   end
-  
+   
 ensure
   producer.deliver_messages
   producer.shutdown
